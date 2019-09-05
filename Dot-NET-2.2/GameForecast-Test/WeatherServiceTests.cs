@@ -32,14 +32,14 @@ namespace GameForecast.test {
         [InlineData( 83,       0,       "2019-09-03T19:30:00-06:00", 0, null, null, null, "Fake exception thrown to mimic a timeout on the hourly forecast call."  )] // hourly forecast call times out
         [InlineData( 99,       0,       "2019-09-03T19:30:00-06:00", 0, null, null, null, "fake exception thrown to mimic a timeout"  )] // The point request times out
         public void test_GetForecast( 
-            double latitude, 
-            double longitude, 
-            string dateTimeString, 
-            int temp, 
-            string windSpeed, 
-            string windDirection, 
-            string description, 
-            string errorMessage 
+            double latitude,
+            double longitude,
+            string dateTimeString,
+            int temp,
+            string windSpeed,
+            string windDirection,
+            string description,
+            string errorMessage
         ){
             DateTime hour = DateTime.Parse( dateTimeString, null, System.Globalization.DateTimeStyles.RoundtripKind);
             var task = _service.GetForecast( latitude, longitude, hour );

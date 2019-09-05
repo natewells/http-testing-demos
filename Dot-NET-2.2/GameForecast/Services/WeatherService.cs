@@ -48,7 +48,7 @@ namespace GameForecast.Models
 
                 
                 if( forecastData["properties"] != null && forecastData["properties"]["periods"] != null ){
-                    hourForecast.errorMessage = "Forecast not availble for requested time.";
+                    hourForecast.errorMessage = "Forecast not available for requested time.";
                     foreach( var p in forecastData["properties"]["periods"] ){
                         if( dateTime >= p.Value<DateTime>("startTime") && dateTime < p.Value<DateTime>("endTime") ){
                             hourForecast.temperature = p.Value<int>("temperature");

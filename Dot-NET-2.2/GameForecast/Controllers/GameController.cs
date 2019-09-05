@@ -62,8 +62,14 @@ namespace GameForecast.Controllers
             if( game == null ){
                 return NotFound();
             }
-            LocationSearchResult location = ( await _locationService.searchInCity( game.location.name, game.location.city, game.location.stateAbbreviation ) )[0];
-            game.forecast = await _weatherService.GetForecast( location.latitude, location.longitude, game.kickoffTime );
+            LocationSearchResult location = ( await _locationService.searchInCity(
+                game.location.name,
+                game.location.city,
+                game.location.stateAbbreviation
+            ) )[0];
+            game.forecast = await _weatherService.GetForecast(
+                location.latitude, location.longitude, game.kickoffTime
+            );
 
             return game;
         }

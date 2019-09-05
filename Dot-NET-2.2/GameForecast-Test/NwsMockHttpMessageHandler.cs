@@ -90,7 +90,6 @@ namespace GameForecast.test {
                         case '3':
                             // throw an exception to simulate a timeout
                             throw new TaskCanceledException( "Fake exception thrown to mimic a timeout on the hourly forecast call." );
-                            break;
                     }
                 }
             }
