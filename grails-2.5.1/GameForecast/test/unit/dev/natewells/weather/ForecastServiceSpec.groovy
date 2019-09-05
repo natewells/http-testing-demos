@@ -3,8 +3,6 @@ package dev.natewells.weather
 import grails.test.mixin.TestFor
 import spock.lang.Specification
 import spock.lang.Unroll
-import wslite.http.HTTPRequest
-import wslite.http.HTTPResponse
 import wslite.rest.RESTClient
 import wslite.rest.Response
 
@@ -23,9 +21,32 @@ class ForecastServiceSpec extends Specification {
         expectedCallCount * service.client.get(_) >> { Map args ->
             Response response = Mock( Response )
             if( args.path?.startsWith( '/points/' ) ){
-                switch( args.path.toString().charAt( '/points/'.size() ) ){
+                switch( args.path.charAt( '/points/'.size() ) ){
                     case '-':
                         response.getStatusCode() >> 404
+                        break
+                    case '8':
+                        response.getStatusCode() >> 200
+                        switch( args.path.charAt( '/points/'.size() + 1 ) ){
+                            case '0':
+                                response.getContentAsString() >> mockPointResponse.replace('"forecastHourly"', '"new-property-forecastHourly"')
+                                break
+                            case '1':
+                                response.getContentAsString() >> mockPointResponse.replace('/53,73/forecast/hourly', '/11,11/forecast/hourly')
+                                break
+                            case '2':
+                                response.getContentAsString() >> mockPointResponse.replace('/53,73/forecast/hourly', '/22,22/forecast/hourly')
+                                break
+                            case '3':
+                                response.getContentAsString() >> mockPointResponse.replace('/53,73/forecast/hourly', '/33,33/forecast/hourly')
+                                break
+                            case '9':
+                                response.getContentAsString() >> mockPointResponse.replace('/53,73/forecast/hourly', '/99,99/forecast/hourly')
+                                break
+                        }
+                        break
+                    case '9':
+                        throw new SocketTimeoutException("fake timeout thrown by unit test.")
                         break
                     default:
                         response.getStatusCode() >> 200
@@ -34,19 +55,43 @@ class ForecastServiceSpec extends Specification {
                 }
 
             } else if( args.path?.endsWith( '/forecast/hourly' ) ){
-                response.getStatusCode() >> 200
-                response.getContentAsString() >> mockHourForecastResponse
+                switch( args.path.substring( '/gridpoints/BOU/'.size(), '/gridpoints/BOU/'.size() + 5 ) ){
+                    case '11,11':
+                        response.getStatusCode() >> 400
+                        break
+                    case '22,22':
+                        response.getStatusCode() >> 200
+                        response.getContentAsString() >> mockHourForecastResponse.replace('periods', 'new-property-periods')
+                        break
+                    case '99,99':
+                        throw new SocketTimeoutException("fake timeout thrown by unit test.")
+                        break
+                    default:
+                        response.getStatusCode() >> 200
+                        response.getContentAsString() >> mockHourForecastResponse
+                }
             }
             response
         }
         result.errorMessage == expectedResult.errorMessage
+        result.temperature == expectedResult.temperature
+        result.windDirection == expectedResult.windDirection
+        result.windSpeed == expectedResult.windSpeed
+        result.weatherDescription == expectedResult.weatherDescription
 
         where:
         label                 | lat  | lon  | timeString         | expectedCallCount | expectedResult
         'bad location'        | -102 | 30   | '2019-09-03 14:30' | 1                 | new HourForecast(errorMessage: "Invalid location.")
         'yesterday'           | 30   | -102 | '2019-08-31 23:00' | 2                 | new HourForecast(errorMessage: "Forecast not available.")
         'waaay in the future' | 30   | -102 | '2019-09-30 14:30' | 2                 | new HourForecast(errorMessage: "Forecast not available.")
-        'happy path'          | 40   | -100 | '2019-09-03 14:30' | 2                 | new HourForecast()
+        'happy path'          | 30   | -102 | '2019-09-03 14:30' | 2                 | new HourForecast( temperature: 81, windDirection: 'ENE', windSpeed: '5 mph', weatherDescription: 'Slight Chance Showers And Thunderstorms')
+        'earliest happy path' | 30   | -102 | '2019-09-01 22:00' | 2                 | new HourForecast( temperature: 78, windDirection: 'W', windSpeed: '7 mph', weatherDescription: 'Mostly Clear')
+        'latest happy path'   | 30   | -102 | '2019-09-04 23:59' | 2                 | new HourForecast( temperature: 70, windDirection: 'WSW', windSpeed: '6 mph', weatherDescription: 'Slight Chance Showers And Thunderstorms')
+        'no hourly URL'       | 80   | -102 | '2019-09-03 12:30' | 1                 | new HourForecast( errorMessage: 'Forecast details not available.')
+        'hourly: 400'         | 81   | -102 | '2019-09-03 12:30' | 2                 | new HourForecast( errorMessage: 'Forecast request failed.' )
+        'hourly: bad data'    | 82   | -102 | '2019-09-03 12:30' | 2                 | new HourForecast( errorMessage: 'Forecast not available.')
+        'point: timeout'      | 99   | -102 | '2019-09-03 12:30' | 1                 | new HourForecast( errorMessage: 'Error encountered retrieving forecast.')
+        'hourly: timeout'     | 89   | -102 | '2019-09-03 12:30' | 2                 | new HourForecast( errorMessage: 'Error encountered retrieving forecast details.')
     }
 
     private static String mockPointResponse = '''{
